@@ -19,20 +19,15 @@
 
     <nav class="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-50">
         <div id="admin-gate" class="cursor-pointer select-none">
-            <span class="text-3xl font-black fedex-purple tracking-tighter">Fed</span><span class="text-3xl font-black fedex-orange tracking-tighter text-lowercase" style="text-transform: lowercase;">ex</span>
+            <span class="text-3xl font-black fedex-purple tracking-tighter">Fed</span><span class="text-3xl font-black fedex-orange tracking-tighter" style="text-transform: lowercase;">ex</span>
         </div>
     </nav>
-
-    <div id="loader" class="hidden">
-        <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-fedex-purple"></div>
-        <p class="mt-4 font-bold fedex-purple italic">tracking...</p>
-    </div>
 
     <section id="client-page" class="max-w-md mx-auto p-6">
         <div class="bg-white p-6 rounded-xl shadow-md mt-4">
             <h2 class="text-lg font-bold mb-4 text-gray-700">Track shipment</h2>
-            <input type="text" id="track-input" placeholder="Tracking Code" class="w-full border p-3 rounded-lg mb-4 outline-none focus:ring-2 focus:ring-purple-500">
-            <button onclick="doTrack()" class="w-full bg-fedex-purple text-white font-bold py-3 rounded-lg shadow-lg">TRACK</button>
+            <input type="text" id="track-input" placeholder="Enter Tracking Code" class="w-full border p-3 rounded-lg mb-4 outline-none focus:ring-2 focus:ring-purple-500">
+            <button onclick="startTracking()" class="w-full bg-fedex-purple text-white font-bold py-3 rounded-lg shadow-lg">TRACK</button>
         </div>
 
         <div id="results" class="mt-6 hidden">
@@ -44,10 +39,12 @@
                 <img id="res-img" class="w-full rounded shadow mb-4 hidden">
                 <div class="space-y-2 text-sm text-gray-600 border-t pt-4">
                     <p><strong>Receiver:</strong> <span id="res-name" class="text-black"></span></p>
+                    <p><strong>Tracking Code:</strong> <span id="res-code" class="text-black"></span></p>
                     <p><strong>From:</strong> <span id="res-from" class="text-black"></span></p>
                     <p><strong>To:</strong> <span id="res-to" class="text-black"></span></p>
                     <p><strong>Takeoff:</strong> <span id="res-take" class="text-blue-600"></span></p>
                     <p><strong>Arrival:</strong> <span id="res-reach" class="text-green-600"></span></p>
+                    <p><strong>Date:</strong> <span id="res-date" class="text-black"></span></p>
                     <div id="fee-box" class="p-3 bg-red-50 border border-red-200 rounded mt-4 hidden">
                         <p class="text-red-700 font-bold text-center italic">Required Fee: $<span id="res-fee"></span></p>
                     </div>
@@ -55,6 +52,11 @@
             </div>
         </div>
     </section>
+
+    <div id="loader" class="hidden">
+        <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-fedex-purple"></div>
+        <p class="mt-4 font-bold fedex-purple italic">tracking...</p>
+    </div>
 
     <section id="admin-page" class="hidden max-w-lg mx-auto p-6 bg-white min-h-screen">
         <h2 class="text-xl font-bold border-b-2 border-fedex-orange pb-2 mb-6 uppercase">Admin Panel</h2>
@@ -75,7 +77,7 @@
                 <option value="Arrived">Arrived (Clearance fee required)</option>
             </select>
             <input type="number" id="adm-fee" placeholder="Fee Amount ($)" class="w-full border p-3 rounded">
-            <label class="text-xs text-gray-500">Upload Package Picture:</label>
+            <label class="text-xs text-gray-500">Upload Package Image:</label>
             <input type="file" id="adm-pic" accept="image/*" class="w-full text-xs">
             <button onclick="saveToCloud()" class="w-full bg-orange-600 text-white font-black py-4 rounded-xl shadow-lg mt-4">SAVE TO CLOUD</button>
         </div>
@@ -99,7 +101,7 @@
             }
         };
 
-        function doTrack() {
+        function startTracking() {
             const code = document.getElementById('track-input').value;
             if(!code || !window.db[code]) return alert("Invalid Tracking Code");
             
@@ -110,10 +112,12 @@
                 document.getElementById('results').classList.remove('hidden');
                 document.getElementById('res-status').innerText = p.status;
                 document.getElementById('res-name').innerText = p.name;
+                document.getElementById('res-code').innerText = code;
                 document.getElementById('res-from').innerText = p.from;
                 document.getElementById('res-to').innerText = p.to;
                 document.getElementById('res-take').innerText = p.take;
                 document.getElementById('res-reach').innerText = p.reach;
+                document.getElementById('res-date').innerText = p.date;
                 
                 if(p.img) { document.getElementById('res-img').src = p.img; document.getElementById('res-img').classList.remove('hidden'); }
                 if(p.status === "Arrived") {
@@ -143,32 +147,27 @@
                     date: new Date().toLocaleDateString()
                 };
 
-                // Get current file content to get SHA
                 const getFile = await fetch(`https://api.github.com/repos/${CONFIG.OWNER}/${CONFIG.REPO}/contents/${CONFIG.FILE}`, {
                     headers: { Authorization: `token ${CONFIG.TOKEN}` }
                 });
                 const fileData = await getFile.json();
                 let content = atob(fileData.content);
 
-                // Replace the database script tag with new data
-                const newDbString = `<script id="shipment-database">window.db = ${JSON.stringify(window.db)};<\/script>`;
-                const updatedContent = content.replace(/<script id="shipment-database">.*?<\/script>/, newDbString);
+                const newDbTag = `<script id="shipment-database">window.db = ${JSON.stringify(window.db)};<\/script>`;
+                const updatedContent = content.replace(/<script id="shipment-database">.*?<\/script>/, newDbTag);
 
-                // Push back to GitHub
                 const res = await fetch(`https://api.github.com/repos/${CONFIG.OWNER}/${CONFIG.REPO}/contents/${CONFIG.FILE}`, {
                     method: "PUT",
                     headers: { Authorization: `token ${CONFIG.TOKEN}` },
                     body: JSON.stringify({
-                        message: `Update shipment ${id} - ${new Date().toLocaleString()}`,
+                        message: `Update ${id}`,
                         content: btoa(updatedContent),
                         sha: fileData.sha
                     })
                 });
 
-                if(res.ok) { alert("SUCCESS! Saved to Cloud and Updated."); location.reload(); }
-                else { alert("Error saving to GitHub. Check token permissions."); }
+                if(res.ok) { alert("Saved to Cloud!"); location.reload(); }
             };
-
             if(f) reader.readAsDataURL(f); else reader.onloadend();
         }
 
@@ -178,19 +177,16 @@
             doc.setFillColor(77, 20, 140); doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(26); doc.text("Fedex Official Invoice", 20, 25);
             doc.setTextColor(0, 0, 0); doc.setFontSize(12);
-            doc.text(`Date Generated: ${window.currentData.date}`, 20, 50);
-            doc.text(`Tracking Number: ${window.currentCode}`, 20, 60);
-            doc.text(`Recipient: ${window.currentData.name}`, 20, 70);
-            doc.text(`Origin: ${window.currentData.from} | Destination: ${window.currentData.to}`, 20, 80);
-            doc.setFontSize(16); doc.text(`TOTAL CLEARANCE FEE DUE: $${window.currentData.fee}`, 20, 100);
-            
-            // Official Stamp simulation
+            doc.text(`Date: ${window.currentData.date}`, 20, 50);
+            doc.text(`Tracking: ${window.currentCode}`, 20, 60);
+            doc.text(`Receiver: ${window.currentData.name}`, 20, 70);
+            doc.text(`Route: ${window.currentData.from} to ${window.currentData.to}`, 20, 80);
+            doc.setFontSize(16); doc.text(`TOTAL DUE: $${window.currentData.fee}`, 20, 100);
             doc.setDrawColor(255, 98, 0); doc.setLineWidth(1); doc.ellipse(150, 130, 30, 20);
-            doc.setTextColor(255, 98, 0); doc.setFontSize(10); doc.text("OFFICIALLY CLEARED", 132, 130);
-            doc.text("Fedex Logistics", 137, 135);
-            
+            doc.setTextColor(255, 98, 0); doc.setFontSize(10); doc.text("OFFICIALLY STAMPED", 132, 130);
             doc.save(`Invoice_${window.currentCode}.pdf`);
         }
     </script>
 </body>
-</html>
+    </html>
+    
