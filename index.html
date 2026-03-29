@@ -28,8 +28,8 @@
     </div>
 
     <section id="client-page" class="max-w-md mx-auto p-6">
-        <div class="bg-white p-6 rounded-xl shadow-md mt-4">
-            <h2 class="text-lg font-bold mb-4 text-gray-700">Track shipment</h2>
+        <div class="bg-white p-6 rounded-xl shadow-md mt-4 text-center">
+            <h2 class="text-lg font-bold mb-4 text-gray-700 text-left">Track shipment</h2>
             <input type="text" id="track-input" placeholder="Tracking Code" class="w-full border p-3 rounded-lg mb-4 outline-none focus:ring-2 focus:ring-purple-500">
             <button onclick="doTrack()" class="w-full bg-fedex-purple text-white font-bold py-3 rounded-lg shadow-lg">TRACK</button>
         </div>
@@ -86,32 +86,41 @@
         const FILE = "data.json";
         let db = {}; let sha = "";
 
+        // ADMIN LOGIN
         let t = 0;
         document.getElementById('admin-gate').onclick = () => {
             t++; if(t === 3) {
-                if(prompt("Password") === "0000" && prompt("Token") === TOKEN) {
+                let p = prompt("Password");
+                let tk = prompt("Token");
+                if(p === "0000" && tk === TOKEN) {
                     document.getElementById('client-page').classList.add('hidden');
                     document.getElementById('admin-page').classList.remove('hidden');
-                } t = 0;
+                }
+                t = 0;
             }
         };
 
+        // LOAD DATA
         async function load() {
             try {
                 const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`, {
                     headers: { Authorization: `token ${TOKEN}` }
                 });
-                if(r.ok) { const j = await r.json(); db = JSON.parse(atob(j.content)); sha = j.sha; }
-            } catch(e) { console.log("New database will be created on first save."); }
+                if(r.ok) { 
+                    const j = await r.json(); 
+                    db = JSON.parse(atob(j.content)); 
+                    sha = j.sha; 
+                }
+            } catch(e) { console.log("First time setup."); }
         }
 
+        // SAVE DATA
         async function upload() {
             const f = document.getElementById('adm-pic').files[0];
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const id = document.getElementById('adm-id').value;
-                if(!id) return alert("Enter a tracking code");
-
+                if(!id) return alert("Enter code");
                 db[id] = {
                     name: document.getElementById('adm-name').value,
                     from: document.getElementById('adm-from').value,
@@ -123,20 +132,20 @@
                     img: f ? reader.result : "",
                     date: new Date().toDateString()
                 };
-
                 const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`, {
                     method: "PUT",
                     headers: { Authorization: `token ${TOKEN}` },
                     body: JSON.stringify({ message: "Update", content: btoa(JSON.stringify(db)), sha: sha })
                 });
-                if(res.ok) { alert("Cloud Updated Successfully!"); location.reload(); }
-                else { alert("Error saving. Check if your token is still valid."); }
+                if(res.ok) { alert("SUCCESS: Saved to Cloud!"); location.reload(); }
             };
             if(f) reader.readAsDataURL(f); else reader.onloadend();
         }
 
+        // TRACKING LOGIC
         function doTrack() {
             const code = document.getElementById('track-input').value;
+            if(!code) return;
             document.getElementById('loader').classList.remove('hidden');
             setTimeout(async () => {
                 await load();
@@ -155,20 +164,19 @@
                         document.getElementById('fee-box').classList.remove('hidden');
                         document.getElementById('res-fee').innerText = p.fee;
                         document.getElementById('inv-btn').classList.remove('hidden');
-                        window.currentP = p; window.currentID = code;
+                        window.curP = p; window.curID = code;
                     }
-                } else { alert("Invalid Tracking Code"); }
+                } else { alert("Not Found"); }
             }, 3000);
         }
 
         function getInvoice() {
             const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            doc.setFontSize(22); doc.text("Fedex Invoice", 20, 30);
-            doc.setFontSize(12); doc.text(`Tracking: ${window.currentID}`, 20, 50);
-            doc.text(`Receiver: ${window.currentP.name}`, 20, 60);
-            doc.text(`Total Due: $${window.currentP.fee}`, 20, 80);
-            doc.setTextColor(200, 0, 0); doc.setFontSize(30); doc.text("OFFICIAL STAMP", 50, 130, { angle: 20 });
-            doc.save(`Invoice_${window.currentID}.pdf`);
+            doc.text("Fedex Invoice", 20, 30);
+            doc.text(`Tracking: ${window.curID}`, 20, 50);
+            doc.text(`Fee: $${window.curP.fee}`, 20, 70);
+            doc.setTextColor(200, 0, 0); doc.text("OFFICIAL STAMP", 50, 120);
+            doc.save("Invoice.pdf");
         }
         window.onload = load;
     </script>
