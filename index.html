@@ -9,7 +9,6 @@
     <style>
         .fedex-purple { color: #4D148C; } .fedex-orange { color: #FF6200; }
         .bg-fedex-purple { background-color: #4D148C; }
-        #loader { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
         .hidden { display: none; }
     </style>
 </head>
@@ -55,11 +54,6 @@
         </div>
     </section>
 
-    <div id="loader" class="hidden">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-fedex-purple"></div>
-        <p class="mt-4 font-bold fedex-purple italic">tracking...</p>
-    </div>
-
     <section id="admin-page" class="hidden max-w-lg mx-auto p-6 bg-white min-h-screen">
         <h2 class="text-xl font-bold border-b-2 border-fedex-orange pb-2 mb-6 uppercase">Shipment Manager</h2>
         <div class="space-y-4">
@@ -99,7 +93,8 @@
         document.getElementById('admin-gate').onclick = () => {
             taps++;
             if(taps === 3) {
-                if(prompt("Admin Password") === "0000" && prompt("Enter Token") === GIT.T) {
+                let pass = prompt("Admin Password");
+                if(pass === "0000" && prompt("Enter Token") === GIT.T) {
                     document.getElementById('client-page').classList.add('hidden');
                     document.getElementById('admin-page').classList.remove('hidden');
                 }
@@ -107,46 +102,40 @@
             }
         };
 
-        // TRACKING FUNCTION WITH THE 3s DELAY
+        // TRACKING FUNCTION (INSTANT RESPONSE)
         function startTracking() {
             const code = document.getElementById('track-input').value.trim();
             if(!code || !window.db[code]) return alert("Tracking code not found.");
             
-            // SHOW LOADER
-            document.getElementById('loader').classList.remove('hidden');
+            const data = window.db[code];
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('res-status').innerText = data.status;
+            document.getElementById('res-name').innerText = data.name;
+            document.getElementById('res-code').innerText = code;
+            document.getElementById('res-from').innerText = data.from;
+            document.getElementById('res-to').innerText = data.to;
+            document.getElementById('res-take').innerText = data.take;
+            document.getElementById('res-reach').innerText = data.reach;
+            document.getElementById('res-date').innerText = data.date;
             
-            setTimeout(() => {
-                // HIDE LOADER AFTER 3 SECONDS
-                document.getElementById('loader').classList.add('hidden');
-                const data = window.db[code];
-                document.getElementById('results').classList.remove('hidden');
-                document.getElementById('res-status').innerText = data.status;
-                document.getElementById('res-name').innerText = data.name;
-                document.getElementById('res-code').innerText = code;
-                document.getElementById('res-from').innerText = data.from;
-                document.getElementById('res-to').innerText = data.to;
-                document.getElementById('res-take').innerText = data.take;
-                document.getElementById('res-reach').innerText = data.reach;
-                document.getElementById('res-date').innerText = data.date;
-                
-                if(data.img) { 
-                    document.getElementById('res-img').src = data.img; 
-                    document.getElementById('res-img').classList.remove('hidden'); 
-                }
+            if(data.img) { 
+                document.getElementById('res-img').src = data.img; 
+                document.getElementById('res-img').classList.remove('hidden'); 
+            } else {
+                document.getElementById('res-img').classList.add('hidden');
+            }
 
-                if(data.status === "Arrived") {
-                    document.getElementById('fee-box').classList.remove('hidden');
-                    document.getElementById('res-fee').innerText = data.fee;
-                    document.getElementById('inv-btn').classList.remove('hidden');
-                    window.currentData = data; window.currentCode = code;
-                } else {
-                    document.getElementById('fee-box').classList.add('hidden');
-                    document.getElementById('inv-btn').classList.add('hidden');
-                }
-            }, 3000);
+            if(data.status === "Arrived" || data.status === "Held at customs") {
+                document.getElementById('fee-box').classList.remove('hidden');
+                document.getElementById('res-fee').innerText = data.fee;
+                document.getElementById('inv-btn').classList.remove('hidden');
+                window.currentData = data; window.currentCode = code;
+            } else {
+                document.getElementById('fee-box').classList.add('hidden');
+                document.getElementById('inv-btn').classList.add('hidden');
+            }
         }
 
-        // AUTO-SAVE SYSTEM: REWRITES THE index.html FILE
         async function saveToCloud() {
             const btn = document.getElementById('save-btn');
             const code = document.getElementById('adm-id').value.trim();
@@ -216,5 +205,4 @@
         }
     </script>
 </body>
-    </html>
-                                                                           
+</html>
