@@ -88,7 +88,6 @@
             F: "index.html"
         };
 
-        // ADMIN LOGIN (3 TAPS ON LOGO)
         let taps = 0;
         document.getElementById('admin-gate').onclick = () => {
             taps++;
@@ -102,7 +101,6 @@
             }
         };
 
-        // TRACKING FUNCTION (INSTANT RESPONSE)
         function startTracking() {
             const code = document.getElementById('track-input').value.trim();
             if(!code || !window.db[code]) return alert("Tracking code not found.");
@@ -141,50 +139,73 @@
             const code = document.getElementById('adm-id').value.trim();
             if(!code) return alert("Missing Tracking Code");
             
-            btn.innerText = "SAVING..."; btn.disabled = true;
+            btn.innerText = "CONNECTING..."; btn.disabled = true;
 
-            const file = document.getElementById('adm-pic').files[0];
-            let base64 = "";
-            if(file) {
-                base64 = await new Promise((r) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => r(reader.result);
-                    reader.readAsDataURL(file);
+            try {
+                const file = document.getElementById('adm-pic').files[0];
+                let base64 = "";
+                if(file) {
+                    base64 = await new Promise((r) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => r(reader.result);
+                        reader.readAsDataURL(file);
+                    });
+                } else if (window.db[code]) { 
+                    base64 = window.db[code].img; 
+                }
+
+                window.db[code] = {
+                    name: document.getElementById('adm-name').value,
+                    from: document.getElementById('adm-from').value,
+                    to: document.getElementById('adm-to').value,
+                    take: document.getElementById('adm-take').value,
+                    reach: document.getElementById('adm-reach').value,
+                    status: document.getElementById('adm-status').value,
+                    fee: document.getElementById('adm-fee').value,
+                    img: base64,
+                    date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+                };
+
+                const url = `https://api.github.com/repos/${GIT.U}/${GIT.R}/contents/${GIT.F}`;
+                
+                // Get current file state
+                const getFile = await fetch(url, { 
+                    headers: { 'Authorization': `token ${GIT.T}`, 'Cache-Control': 'no-cache' } 
                 });
-            } else if (window.db[code]) { base64 = window.db[code].img; }
+                const meta = await getFile.json();
+                
+                if(!meta.sha) throw new Error("Could not find file on GitHub. Check Repo/User names.");
 
-            window.db[code] = {
-                name: document.getElementById('adm-name').value,
-                from: document.getElementById('adm-from').value,
-                to: document.getElementById('adm-to').value,
-                take: document.getElementById('adm-take').value,
-                reach: document.getElementById('adm-reach').value,
-                status: document.getElementById('adm-status').value,
-                fee: document.getElementById('adm-fee').value,
-                img: base64,
-                date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-            };
+                const originalHTML = decodeURIComponent(escape(atob(meta.content)));
+                const dbTag = `<script id="shipment-db">window.db = ${JSON.stringify(window.db)};<\/script>`;
+                const updatedHTML = originalHTML.replace(/<script id="shipment-db">.*?<\/script>/, dbTag);
 
-            const url = `https://api.github.com/repos/${GIT.U}/${GIT.R}/contents/${GIT.F}`;
-            const get = await fetch(url, { headers: { Authorization: `token ${GIT.T}` } });
-            const meta = await get.json();
-            const original = atob(meta.content);
+                btn.innerText = "UPLOADING...";
 
-            const dbTag = `<script id="shipment-db">window.db = ${JSON.stringify(window.db)};<\/script>`;
-            const updated = original.replace(/<script id="shipment-db">.*?<\/script>/, dbTag);
+                const response = await fetch(url, {
+                    method: "PUT",
+                    headers: { 'Authorization': `token ${GIT.T}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `Update shipment: ${code}`,
+                        content: btoa(unescape(encodeURIComponent(updatedHTML))),
+                        sha: meta.sha
+                    })
+                });
 
-            const res = await fetch(url, {
-                method: "PUT",
-                headers: { Authorization: `token ${GIT.T}` },
-                body: JSON.stringify({
-                    message: `Cloud Update: ${code}`,
-                    content: btoa(unescape(encodeURIComponent(updated))),
-                    sha: meta.sha
-                })
-            });
-
-            if(res.ok) { alert("SUCCESS: Site updated for all clients!"); location.reload(); }
-            else { alert("Error saving. Check token."); btn.innerText = "SAVE TO CLOUD"; btn.disabled = false; }
+                if(response.ok) {
+                    alert("SUCCESS: Data saved to cloud!");
+                    location.reload();
+                } else {
+                    const errData = await response.json();
+                    console.error(errData);
+                    alert("FAILED: " + (errData.message || "Unknown error"));
+                    btn.innerText = "SAVE TO CLOUD"; btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert("ERROR: " + err.message);
+                btn.innerText = "SAVE TO CLOUD"; btn.disabled = false;
+            }
         }
 
         function getInvoice() {
